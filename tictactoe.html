@@ -302,6 +302,7 @@
       difficulty: 3,
       gameOver: false,
       cpuTurn: false,
+      gameId: 0,
       scores: { player: 0, cpu: 0, draws: 0 }
     };
 
@@ -332,7 +333,6 @@
         const idx = parseInt(cell.dataset.index);
         if (state.gameOver || state.cpuTurn || state.board[idx]) return;
         makeMove(idx, state.playerSide);
-        if (!state.gameOver) scheduleCpuMove();
       });
     });
 
@@ -344,6 +344,7 @@
     });
 
     function newGame() {
+      state.gameId++;                         // invalidates any pending CPU timeouts
       state.board = Array(9).fill(null);
       state.gameOver = false;
       state.cpuTurn = false;
@@ -352,7 +353,9 @@
       if (state.cpuSide === 'X') {
         state.cpuTurn = true;
         setStatus('CPU is thinking<span class="thinking"></span>');
+        const gid = state.gameId;
         setTimeout(() => {
+          if (state.gameId !== gid) return;
           const move = getCpuMove();
           makeMove(move, state.cpuSide);
         }, 500);
@@ -371,9 +374,11 @@
       const result = checkResult(state.board);
       if (result) {
         endGame(result);
+      } else if (side === state.playerSide) {
+        scheduleCpuMove();
       } else {
-        state.cpuTurn = (side === state.playerSide);
-        setStatus(state.cpuTurn ? 'CPU is thinking<span class="thinking"></span>' : 'Your turn');
+        state.cpuTurn = false;
+        setStatus('Your turn');
       }
     }
 
@@ -381,8 +386,9 @@
       state.cpuTurn = true;
       setStatus('CPU is thinking<span class="thinking"></span>');
       const delay = 300 + Math.random() * (state.difficulty * 80);
+      const gid = state.gameId;
       setTimeout(() => {
-        if (state.gameOver) return;
+        if (state.gameOver || state.gameId !== gid) return;
         const move = getCpuMove();
         makeMove(move, state.cpuSide);
       }, delay);
