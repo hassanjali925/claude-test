@@ -5,285 +5,511 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tic Tac Toe</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #1a1a2e;
-      font-family: 'Segoe UI', sans-serif;
-      color: #eee;
+      padding: 20px;
     }
 
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      letter-spacing: 3px;
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 28px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #e94560;
     }
 
-    #status {
-      font-size: 1.2rem;
-      margin-bottom: 1.5rem;
-      height: 1.6rem;
-      color: #a8d8ea;
+    .container {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
 
-    #board {
+    .difficulty-section { margin-bottom: 24px; }
+
+    .difficulty-section label,
+    .side-section label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    .difficulty-buttons { display: flex; gap: 6px; }
+
+    .diff-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #111124;
+      color: #aaa;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .diff-btn:hover { border-color: #555; color: #ddd; }
+    .diff-btn.active { color: #fff; font-weight: 600; }
+
+    .diff-btn[data-level="1"].active { background: #1a3a1a; border-color: #2d6a2d; color: #4ade80; }
+    .diff-btn[data-level="2"].active { background: #2a3a10; border-color: #6a8a20; color: #a3e635; }
+    .diff-btn[data-level="3"].active { background: #3a2a10; border-color: #8a6a20; color: #fbbf24; }
+    .diff-btn[data-level="4"].active { background: #3a1a10; border-color: #8a4020; color: #fb923c; }
+    .diff-btn[data-level="5"].active { background: #3a101a; border-color: #8a2040; color: #f87171; }
+
+    .side-section { margin-bottom: 24px; display: flex; align-items: center; gap: 12px; }
+    .side-section label { margin-bottom: 0; white-space: nowrap; }
+
+    .side-toggle {
+      display: flex;
+      background: #111124;
+      border: 1px solid #333;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .side-btn {
+      flex: 1;
+      padding: 8px 18px;
+      border: none;
+      background: transparent;
+      color: #888;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .side-btn.active { background: #2a2a5a; color: #fff; }
+
+    .status {
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 600;
+      min-height: 28px;
+      margin-bottom: 20px;
+      color: #ccc;
+    }
+
+    .status .win  { color: #4ade80; }
+    .status .lose { color: #f87171; }
+    .status .draw { color: #fbbf24; }
+
+    .board {
       display: grid;
-      grid-template-columns: repeat(3, 110px);
-      grid-template-rows: repeat(3, 110px);
-      gap: 8px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
     }
 
     .cell {
-      background: #16213e;
+      aspect-ratio: 1;
+      background: #111124;
+      border: 1px solid #2a2a4a;
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 3rem;
-      font-weight: bold;
+      font-size: 2.8rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
+      transition: background 0.15s, transform 0.1s, border-color 0.15s;
       user-select: none;
     }
 
-    .cell:hover:not(.taken) {
-      background: #0f3460;
-      transform: scale(1.05);
+    .cell:hover:not(.taken):not(.disabled) {
+      background: #1e1e3a;
+      border-color: #4a4a8a;
+      transform: scale(1.03);
     }
 
-    .cell.x { color: #e94560; }
-    .cell.o { color: #a8d8ea; }
+    .cell.taken   { cursor: default; }
+    .cell.disabled { cursor: not-allowed; }
+    .cell.x { color: #60a5fa; }
+    .cell.o { color: #f472b6; }
 
-    .cell.win {
-      background: #0f3460;
-      box-shadow: 0 0 18px rgba(233, 69, 96, 0.6);
+    .cell.winning {
+      background: #1e2a1e;
+      border-color: #4ade80;
+      animation: pulse 0.5s ease-in-out;
     }
 
-    #controls {
-      margin-top: 1.8rem;
-      display: flex;
-      gap: 1rem;
+    @keyframes pulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.08); }
+      100% { transform: scale(1); }
     }
 
-    button {
-      padding: 0.6rem 1.6rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
+    .cell.pop { animation: pop 0.2s ease-out; }
+
+    @keyframes pop {
+      0%   { transform: scale(0.6); opacity: 0.5; }
+      100% { transform: scale(1);   opacity: 1;   }
     }
 
-    button:hover { opacity: 0.85; transform: scale(1.04); }
-
-    #btn-reset {
-      background: #e94560;
-      color: #fff;
-    }
-
-    #mode-label {
-      margin-top: 1.2rem;
-      font-size: 0.9rem;
-      color: #888;
-    }
-
-    #btn-mode {
-      background: #0f3460;
-      color: #a8d8ea;
-      border: 1px solid #a8d8ea44;
-    }
-
-    #score {
-      display: flex;
-      gap: 2.5rem;
-      margin-bottom: 1.2rem;
-      font-size: 1rem;
-    }
+    .scores { display: flex; gap: 10px; margin-bottom: 20px; }
 
     .score-box {
+      flex: 1;
+      background: #111124;
+      border: 1px solid #2a2a4a;
+      border-radius: 10px;
+      padding: 10px;
       text-align: center;
     }
 
-    .score-box span {
-      display: block;
-      font-size: 1.6rem;
-      font-weight: bold;
+    .score-box .label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #666;
+      margin-bottom: 4px;
     }
 
-    .score-box.x-score span { color: #e94560; }
-    .score-box.o-score span { color: #a8d8ea; }
-    .score-box.tie-score span { color: #888; }
+    .score-box .value { font-size: 1.5rem; font-weight: 700; }
+    .score-box.player .value { color: #60a5fa; }
+    .score-box.cpu    .value { color: #f472b6; }
+    .score-box.draws  .value { color: #fbbf24; }
+
+    .actions { display: flex; gap: 10px; }
+
+    .btn {
+      flex: 1;
+      padding: 11px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.03em;
+    }
+
+    .btn:hover  { opacity: 0.85; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary   { background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; }
+    .btn-secondary { background: #1e1e3a; color: #aaa; border: 1px solid #333; }
+
+    .thinking {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: #a78bfa;
+      border-radius: 50%;
+      margin-left: 6px;
+      animation: blink 0.7s infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.1; }
+    }
   </style>
 </head>
 <body>
   <h1>Tic Tac Toe</h1>
+  <p class="subtitle">vs CPU</p>
 
-  <div id="score">
-    <div class="score-box x-score">X <span id="score-x">0</span></div>
-    <div class="score-box tie-score">Ties <span id="score-tie">0</span></div>
-    <div class="score-box o-score">O <span id="score-o">0</span></div>
+  <div class="container">
+    <div class="difficulty-section">
+      <label>Difficulty</label>
+      <div class="difficulty-buttons">
+        <button class="diff-btn" data-level="1">Newbie</button>
+        <button class="diff-btn" data-level="2">Easy</button>
+        <button class="diff-btn active" data-level="3">Medium</button>
+        <button class="diff-btn" data-level="4">Hard</button>
+        <button class="diff-btn" data-level="5">Unbeatable</button>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <label>Play as</label>
+      <div class="side-toggle">
+        <button class="side-btn active" data-side="X">✕</button>
+        <button class="side-btn" data-side="O">○</button>
+      </div>
+    </div>
+
+    <div class="status" id="status">Your turn</div>
+
+    <div class="board" id="board">
+      <div class="cell" data-index="0"></div>
+      <div class="cell" data-index="1"></div>
+      <div class="cell" data-index="2"></div>
+      <div class="cell" data-index="3"></div>
+      <div class="cell" data-index="4"></div>
+      <div class="cell" data-index="5"></div>
+      <div class="cell" data-index="6"></div>
+      <div class="cell" data-index="7"></div>
+      <div class="cell" data-index="8"></div>
+    </div>
+
+    <div class="scores">
+      <div class="score-box player">
+        <div class="label">You</div>
+        <div class="value" id="score-player">0</div>
+      </div>
+      <div class="score-box draws">
+        <div class="label">Draws</div>
+        <div class="value" id="score-draws">0</div>
+      </div>
+      <div class="score-box cpu">
+        <div class="label">CPU</div>
+        <div class="value" id="score-cpu">0</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-new">New Game</button>
+      <button class="btn btn-secondary" id="btn-reset">Reset Scores</button>
+    </div>
   </div>
-
-  <div id="status">X's turn</div>
-
-  <div id="board">
-    <div class="cell" data-i="0"></div>
-    <div class="cell" data-i="1"></div>
-    <div class="cell" data-i="2"></div>
-    <div class="cell" data-i="3"></div>
-    <div class="cell" data-i="4"></div>
-    <div class="cell" data-i="5"></div>
-    <div class="cell" data-i="6"></div>
-    <div class="cell" data-i="7"></div>
-    <div class="cell" data-i="8"></div>
-  </div>
-
-  <div id="controls">
-    <button id="btn-mode">vs CPU</button>
-    <button id="btn-reset">New Game</button>
-  </div>
-  <div id="mode-label">Mode: 2 Players</div>
 
   <script>
     const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 
-    let board, current, gameOver, vsComputer;
-    let scores = { X: 0, O: 0, tie: 0 };
+    const state = {
+      board: Array(9).fill(null),
+      playerSide: 'X',
+      cpuSide: 'O',
+      difficulty: 3,
+      gameOver: false,
+      cpuTurn: false,
+      scores: { player: 0, cpu: 0, draws: 0 }
+    };
 
     const cells = document.querySelectorAll('.cell');
-    const status = document.getElementById('status');
-    const modeBtn = document.getElementById('btn-mode');
-    const modeLabel = document.getElementById('mode-label');
+    const statusEl = document.getElementById('status');
 
-    function init() {
-      board = Array(9).fill('');
-      current = 'X';
-      gameOver = false;
-      cells.forEach(c => { c.textContent = ''; c.className = 'cell'; });
-      status.textContent = "X's turn";
-    }
-
-    function checkWinner() {
-      for (const [a, b, c] of WINS) {
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-          return { winner: board[a], line: [a, b, c] };
-        }
-      }
-      if (board.every(v => v)) return { winner: null, line: [] };
-      return null;
-    }
-
-    function applyMove(i) {
-      board[i] = current;
-      cells[i].textContent = current;
-      cells[i].classList.add(current.toLowerCase(), 'taken');
-
-      const result = checkWinner();
-      if (result) {
-        gameOver = true;
-        if (result.winner) {
-          result.line.forEach(idx => cells[idx].classList.add('win'));
-          status.textContent = `${result.winner} wins!`;
-          scores[result.winner]++;
-        } else {
-          status.textContent = "It's a tie!";
-          scores.tie++;
-        }
-        document.getElementById('score-x').textContent = scores.X;
-        document.getElementById('score-o').textContent = scores.O;
-        document.getElementById('score-tie').textContent = scores.tie;
-        return;
-      }
-
-      current = current === 'X' ? 'O' : 'X';
-      status.textContent = `${current}'s turn`;
-
-      if (vsComputer && current === 'O') {
-        setTimeout(cpuMove, 350);
-      }
-    }
-
-    function cpuMove() {
-      if (gameOver) return;
-      const move = bestMove();
-      applyMove(move);
-    }
-
-    function minimax(b, isMax) {
-      const result = checkBoard(b);
-      if (result === 'O') return 10;
-      if (result === 'X') return -10;
-      if (b.every(v => v)) return 0;
-
-      if (isMax) {
-        let best = -Infinity;
-        b.forEach((v, i) => {
-          if (!v) {
-            b[i] = 'O';
-            best = Math.max(best, minimax(b, false));
-            b[i] = '';
-          }
-        });
-        return best;
-      } else {
-        let best = Infinity;
-        b.forEach((v, i) => {
-          if (!v) {
-            b[i] = 'X';
-            best = Math.min(best, minimax(b, true));
-            b[i] = '';
-          }
-        });
-        return best;
-      }
-    }
-
-    function checkBoard(b) {
-      for (const [a, c, d] of WINS) {
-        if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a];
-      }
-      return null;
-    }
-
-    function bestMove() {
-      let best = -Infinity, move = -1;
-      board.forEach((v, i) => {
-        if (!v) {
-          board[i] = 'O';
-          const score = minimax(board, false);
-          board[i] = '';
-          if (score > best) { best = score; move = i; }
-        }
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.difficulty = parseInt(btn.dataset.level);
+        newGame();
       });
-      return move;
-    }
+    });
+
+    document.querySelectorAll('.side-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.side-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.playerSide = btn.dataset.side;
+        state.cpuSide = btn.dataset.side === 'X' ? 'O' : 'X';
+        newGame();
+      });
+    });
 
     cells.forEach(cell => {
       cell.addEventListener('click', () => {
-        const i = +cell.dataset.i;
-        if (gameOver || board[i] || (vsComputer && current === 'O')) return;
-        applyMove(i);
+        const idx = parseInt(cell.dataset.index);
+        if (state.gameOver || state.cpuTurn || state.board[idx]) return;
+        makeMove(idx, state.playerSide);
+        if (!state.gameOver) scheduleCpuMove();
       });
     });
 
-    document.getElementById('btn-reset').addEventListener('click', init);
-
-    modeBtn.addEventListener('click', () => {
-      vsComputer = !vsComputer;
-      modeBtn.textContent = vsComputer ? '2 Players' : 'vs CPU';
-      modeLabel.textContent = `Mode: ${vsComputer ? 'vs CPU (you are X)' : '2 Players'}`;
-      init();
+    document.getElementById('btn-new').addEventListener('click', newGame);
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      state.scores = { player: 0, cpu: 0, draws: 0 };
+      updateScoreDisplay();
+      newGame();
     });
 
-    vsComputer = false;
-    init();
+    function newGame() {
+      state.board = Array(9).fill(null);
+      state.gameOver = false;
+      state.cpuTurn = false;
+      cells.forEach(c => { c.textContent = ''; c.className = 'cell'; });
+
+      if (state.cpuSide === 'X') {
+        state.cpuTurn = true;
+        setStatus('CPU is thinking<span class="thinking"></span>');
+        setTimeout(() => {
+          const move = getCpuMove();
+          makeMove(move, state.cpuSide);
+        }, 500);
+      } else {
+        setStatus('Your turn');
+      }
+    }
+
+    function makeMove(idx, side) {
+      state.board[idx] = side;
+      const cell = cells[idx];
+      cell.textContent = side === 'X' ? '✕' : '○';
+      cell.classList.add('taken', side.toLowerCase(), 'pop');
+      cell.addEventListener('animationend', () => cell.classList.remove('pop'), { once: true });
+
+      const result = checkResult(state.board);
+      if (result) {
+        endGame(result);
+      } else {
+        state.cpuTurn = (side === state.playerSide);
+        setStatus(state.cpuTurn ? 'CPU is thinking<span class="thinking"></span>' : 'Your turn');
+      }
+    }
+
+    function scheduleCpuMove() {
+      state.cpuTurn = true;
+      setStatus('CPU is thinking<span class="thinking"></span>');
+      const delay = 300 + Math.random() * (state.difficulty * 80);
+      setTimeout(() => {
+        if (state.gameOver) return;
+        const move = getCpuMove();
+        makeMove(move, state.cpuSide);
+      }, delay);
+    }
+
+    function endGame(result) {
+      state.gameOver = true;
+      if (result.winner) {
+        result.combo.forEach(i => cells[i].classList.add('winning'));
+        if (result.winner === state.playerSide) {
+          state.scores.player++;
+          setStatus('<span class="win">You win! 🎉</span>');
+        } else {
+          state.scores.cpu++;
+          setStatus('<span class="lose">CPU wins!</span>');
+        }
+      } else {
+        state.scores.draws++;
+        setStatus('<span class="draw">It\'s a draw!</span>');
+      }
+      updateScoreDisplay();
+    }
+
+    function checkResult(board) {
+      for (const combo of WINS) {
+        const [a, b, c] = combo;
+        if (board[a] && board[a] === board[b] && board[a] === board[c])
+          return { winner: board[a], combo };
+      }
+      if (board.every(Boolean)) return { winner: null, combo: [] };
+      return null;
+    }
+
+    // ── CPU AI ────────────────────────────────────────────────────────────────
+
+    function getCpuMove() {
+      const empty = state.board.map((v, i) => v === null ? i : null).filter(v => v !== null);
+      switch (state.difficulty) {
+        case 1: return level1(empty);
+        case 2: return level2(empty);
+        case 3: return level3(empty);
+        case 4: return level4(empty);
+        default: return level5();
+      }
+    }
+
+    // Level 1 – Newbie: pure random
+    function level1(empty) {
+      return empty[Math.floor(Math.random() * empty.length)];
+    }
+
+    // Level 2 – Easy: take win if available, else random
+    function level2(empty) {
+      return findWin(state.cpuSide) ?? level1(empty);
+    }
+
+    // Level 3 – Medium: win > block > random
+    function level3(empty) {
+      return findWin(state.cpuSide) ?? findWin(state.playerSide) ?? level1(empty);
+    }
+
+    // Level 4 – Hard: win > block > center > corner > side
+    function level4(empty) {
+      const win   = findWin(state.cpuSide);
+      const block = findWin(state.playerSide);
+      if (win !== null) return win;
+      if (block !== null) return block;
+      if (state.board[4] === null) return 4;
+      const corners = [0, 2, 6, 8].filter(i => state.board[i] === null);
+      if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
+      return level1(empty);
+    }
+
+    // Level 5 – Unbeatable: minimax with alpha-beta pruning
+    function level5() {
+      return minimax([...state.board], state.cpuSide, -Infinity, Infinity, true).move;
+    }
+
+    function findWin(side) {
+      for (let i = 0; i < 9; i++) {
+        if (state.board[i] !== null) continue;
+        const test = [...state.board];
+        test[i] = side;
+        if (checkResult(test)?.winner === side) return i;
+      }
+      return null;
+    }
+
+    function minimax(board, turn, alpha, beta, maximizing) {
+      const result = checkResult(board);
+      if (result) {
+        if (result.winner === state.cpuSide)    return { score: 10 };
+        if (result.winner === state.playerSide) return { score: -10 };
+        return { score: 0 };
+      }
+
+      const empty = board.map((v, i) => v === null ? i : null).filter(v => v !== null);
+      let best = maximizing ? { score: -Infinity } : { score: Infinity };
+
+      for (const idx of empty) {
+        board[idx] = turn;
+        const next = turn === state.cpuSide ? state.playerSide : state.cpuSide;
+        const val = minimax(board, next, alpha, beta, !maximizing);
+        board[idx] = null;
+        val.move = idx;
+
+        if (maximizing) {
+          if (val.score > best.score) best = val;
+          alpha = Math.max(alpha, best.score);
+        } else {
+          if (val.score < best.score) best = val;
+          beta = Math.min(beta, best.score);
+        }
+        if (beta <= alpha) break;
+      }
+      return best;
+    }
+
+    function setStatus(html) { statusEl.innerHTML = html; }
+
+    function updateScoreDisplay() {
+      document.getElementById('score-player').textContent = state.scores.player;
+      document.getElementById('score-cpu').textContent    = state.scores.cpu;
+      document.getElementById('score-draws').textContent  = state.scores.draws;
+    }
+
+    newGame();
   </script>
 </body>
 </html>
